@@ -20,3 +20,5 @@ require (
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )
+
+replace github.com/cilium/ebpf => github.com/brb/ebpf v0.8.2-0.20220529141313-d7043a547169

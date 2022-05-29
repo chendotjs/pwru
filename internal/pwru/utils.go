@@ -6,6 +6,7 @@ package pwru
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
 
 	"github.com/cilium/ebpf/btf"
@@ -13,7 +14,7 @@ import (
 
 type Funcs map[string]int
 
-func GetFuncs(pattern string) (Funcs, error) {
+func GetFuncs(pattern string, modules []string) (Funcs, error) {
 	funcs := Funcs{}
 
 	spec, err := btf.LoadKernelSpec()
@@ -26,32 +27,42 @@ func GetFuncs(pattern string) (Funcs, error) {
 		return nil, fmt.Errorf("failed to compile regular expression %v", err)
 	}
 
-	iter := spec.Iterate()
-	for iter.Next() {
-		typ := iter.Type
-		fn, ok := typ.(*btf.Func)
-		if !ok {
-			continue
+	iters := []*btf.TypesIterator{spec.Iterate()}
+	for _, module := range modules {
+		modSpec, err := spec.LoadSplitSpec(filepath.Join("/sys/kernel/btf", module))
+		if err != nil {
+			return nil, fmt.Errorf("failed to load %s btf: %v", module, err)
 		}
+		iters = append(iters, modSpec.Iterate())
+	}
 
-		fnName := string(fn.Name)
+	for _, iter := range iters {
+		for iter.Next() {
+			typ := iter.Type
+			fn, ok := typ.(*btf.Func)
+			if !ok {
+				continue
+			}
 
-		if pattern != "" && reg.FindString(fnName) != fnName {
-			continue
-		}
+			fnName := string(fn.Name)
 
-		fnProto := fn.Type.(*btf.FuncProto)
-		i := 1
-		for _, p := range fnProto.Params {
-			if ptr, ok := p.Type.(*btf.Pointer); ok {
-				if strct, ok := ptr.Target.(*btf.Struct); ok {
-					if strct.Name == "sk_buff" && i <= 5 {
-						funcs[fnName] = i
-						continue
+			if pattern != "" && reg.FindString(fnName) != fnName {
+				continue
+			}
+
+			fnProto := fn.Type.(*btf.FuncProto)
+			i := 1
+			for _, p := range fnProto.Params {
+				if ptr, ok := p.Type.(*btf.Pointer); ok {
+					if strct, ok := ptr.Target.(*btf.Struct); ok {
+						if strct.Name == "sk_buff" && i <= 5 {
+							funcs[fnName] = i
+							continue
+						}
 					}
 				}
+				i += 1
 			}
-			i += 1
 		}
 	}
 

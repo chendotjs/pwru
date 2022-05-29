@@ -56,14 +56,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	funcs, err := pwru.GetFuncs(flags.FilterFunc)
+	funcs, err := pwru.GetFuncs(flags.FilterFunc, flags.Modules)
 	if err != nil {
 		log.Fatalf("Failed to get skb-accepting functions: %s", err)
 	}
 	if len(funcs) <= 0 {
 		log.Fatalf("Cannot find a matching kernel function")
 	}
-	addr2name, err := pwru.GetAddrs(funcs, flags.OutputStack)
+	addr2name, err := pwru.GetAddrs(funcs, flags.OutputStack || len(flags.Modules) != 0)
 	if err != nil {
 		log.Fatalf("Failed to get function addrs: %s", err)
 	}
