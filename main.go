@@ -63,10 +63,12 @@ func main() {
 	if len(funcs) <= 0 {
 		log.Fatalf("Cannot find a matching kernel function")
 	}
+	log.Println("funcs to trace: ", funcs)
 	addr2name, err := pwru.GetAddrs(funcs, flags.OutputStack)
 	if err != nil {
 		log.Fatalf("Failed to get function addrs: %s", err)
 	}
+	// log.Printf("addr2name: %+v", addr2name.Addr2NameMap)
 
 	if flags.OutputSkb {
 		objs := KProbePWRUObjects{}
@@ -128,6 +130,8 @@ func main() {
 		default:
 		}
 
+		// attach ebpf progs !
+		// bpftool perf && bpftool prog show
 		kp, err := link.Kprobe(name, fn, nil)
 		bar.Increment()
 		if err != nil {
@@ -143,6 +147,7 @@ func main() {
 	bar.Finish()
 	log.Printf("Attached (ignored %d)\n", ignored)
 
+	// read events from map.
 	rd, err := perf.NewReader(events, flags.PerCPUBuffer)
 	if err != nil {
 		log.Fatalf("Creating perf event reader: %s", err)
@@ -171,6 +176,7 @@ func main() {
 		}
 	}()
 
+	// finally, let's print.
 	var event pwru.Event
 	runForever := flags.OutputLimitLines == 0
 	for i := flags.OutputLimitLines; i > 0 || runForever; i-- {

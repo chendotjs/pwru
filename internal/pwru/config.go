@@ -114,6 +114,7 @@ func ConfigBPFMap(flags *Flags, cfgMap *ebpf.Map) {
 		}
 	}
 
+	// map with only one element.
 	if err := cfgMap.Update(uint32(0), cfg, 0); err != nil {
 		log.Fatalf("Failed to set filter map: %v", err)
 	}

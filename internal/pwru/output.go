@@ -86,7 +86,7 @@ func (o *output) Print(event *Event) {
 		if err := o.printStackMap.Lookup(&id, &stack); err == nil {
 			for _, ip := range stack.IPs {
 				if ip > 0 {
-					fmt.Printf("\n%s", o.addr2name.findNearestSym(ip))
+					fmt.Printf("\n0x%x %s", ip, o.addr2name.findNearestSym(ip))
 				}
 			}
 		}
